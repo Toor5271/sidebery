@@ -634,6 +634,19 @@ function restoreTabsFromSessionData(
 /**
  * Find suitable tabs data for current window
  */
+/**
+ * Removes transient parts (IPPC channel id / messages in the hash)
+ * from url of sidebery's internal pages (e.g. group page), so it can be
+ * matched with the cached url after the page was reloaded.
+ */
+function normUrlForCacheMatching(url: string): string {
+  if (!url.startsWith(D.ADDON_HOST)) return url
+  const hashIndex = url.indexOf('#')
+  if (hashIndex === -1) return url
+  const prefix = D.PAGE_HASH_RE.exec(url.slice(hashIndex))?.groups?.prefix ?? ''
+  return url.slice(0, hashIndex + 1) + prefix
+}
+
 function findCachedData(
   tabs: DeepReadonly<T.NativeTab[]>,
   data: T.TabCache[][]
@@ -674,7 +687,9 @@ function findCachedData(
       // Match
       const blindspot = tab.status === 'loading' && tab.url === 'about:blank'
       if (blindspot) blindspotCounter++
-      if ((tabData.url === tab.url && !!tabData.pin === tab.pinned) || blindspot) {
+      const tabUrl = normUrlForCacheMatching(tab.url)
+      const tabDataUrl = normUrlForCacheMatching(tabData.url)
+      if ((tabDataUrl === tabUrl && !!tabData.pin === tab.pinned) || blindspot) {
         existedTabs[tab.id] = tabData
         equalityCounter++
       }
@@ -684,7 +699,7 @@ function findCachedData(
         // Try to find corresponding local tab
         for (let j = tabIndex + 1; j < tabIndex + 5; j++) {
           const tabj = tabs[j]
-          if (tabj && tabj.url === tabData.url) {
+          if (tabj && normUrlForCacheMatching(tabj.url) === tabDataUrl) {
             tabIndex = j
             existedTabs[tabj.id] = tabData
             equalityCounter++

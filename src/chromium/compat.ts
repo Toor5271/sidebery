@@ -427,6 +427,7 @@ const tabsNs = namespace(
         tabId = undefined
       }
       const conf = pick(props, TAB_UPDATE_KEYS)
+      if (conf.openerTabId !== undefined && conf.openerTabId === tabId) delete conf.openerTabId
       if ('url' in conf) {
         conf.url = urlIn(conf.url) ?? 'chrome://newtab/'
       }
@@ -459,6 +460,7 @@ const tabsNs = namespace(
       const conf = pick(props, ['bypassCache'])
       return tabId === undefined ? base.reload(conf) : base.reload(tabId, conf)
     },
+    highlight: (info: any) => base.highlight(pick(info, ['tabs', 'windowId'])),
     executeScript,
     captureTab,
     moveInSuccession: () => Promise.resolve(),

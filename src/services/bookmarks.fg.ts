@@ -1142,7 +1142,7 @@ export async function createFromDragEvent(e: DragEvent, dst: T.DstPlaceInfo): Pr
     }
 
     if (info?.items) {
-      const groupUrlStartRe = /^moz-extension:\/\/.{36}\/(page.)?group\/group\.html(.+)$/
+      const groupUrlStartRe = /^(?:moz|chrome)-extension:\/\/[^/]+\/(page.)?group\/group\.html(.+)$/
       for (const item of info.items) {
         // Remove containers info b/c it's a different profile, hence containerId
         // refers to a different container.

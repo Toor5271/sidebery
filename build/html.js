@@ -87,7 +87,10 @@ async function processFile(info) {
   for (const svg of Object.values(svgs)) {
     if (!svg.id) continue
     try {
-      const c = await fs.promises.readFile(svg.path, 'utf-8')
+      // Use generic icon instead of Firefox logo for default favicons
+      let svgPath = svg.path
+      if (IS_CHROMIUM && /firefox(-min)?\.svg$/.test(svgPath)) svgPath = './src/assets/web.svg'
+      const c = await fs.promises.readFile(svgPath, 'utf-8')
       if (SVG_ID_RE.test(c)) {
         svg.content = c.replace(SVG_ID_RE, (m, p1) => `<svg${p1}id="${svg.id}"`)
       } else {

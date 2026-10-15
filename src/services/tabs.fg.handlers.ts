@@ -1190,7 +1190,7 @@ function onTabRemoved(tabId: ID, info: browser.tabs.RemoveInfo, detached?: boole
     !detached &&
     tab.url !== NEWTAB_URL && // Ignore new tabs
     tab.url !== 'about:blank' && // Ignore new tabs
-    (tab.isParent || !tab.url.startsWith('m')) // and non-parent addon pages
+    (tab.isParent || !tab.url.startsWith(D.ADDON_HOST)) // and non-parent addon pages
   ) {
     removedTabInfo = {
       id: tab.id,

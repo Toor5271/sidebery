@@ -1,6 +1,6 @@
 import * as T from 'src/types'
 import { PanelType } from 'src/enums'
-import { DEFAULT_CONTAINER_ID, MOVEID, NEWID, NOID } from 'src/defaults'
+import { ADDON_HOST, DEFAULT_CONTAINER_ID, MOVEID, NEWID, NOID } from 'src/defaults'
 import * as Sidebar from 'src/services/sidebar.fg'
 import * as Tabs from 'src/services/tabs.fg'
 import * as Settings from 'src/services/settings'
@@ -827,7 +827,7 @@ export function moveByRule(tabId: ID, delay: number) {
       excludeTo !== NOID &&
       excludeTo !== tab.panelId &&
       !tab.url.startsWith('a') &&
-      !tab.url.startsWith('m')
+      !tab.url.startsWith(ADDON_HOST)
     ) {
       moveTabToPanel(tab, excludeTo)
     }

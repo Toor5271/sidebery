@@ -119,10 +119,11 @@ export async function resizeFavicon(fav: DataUriImage): Promise<DataUriImage> {
 export function getFavPlaceholder(url?: string): string {
   if (!url) return '#icon_ff'
 
-  if (url.startsWith('m')) {
-    if (url.startsWith(D.GROUP_PATH, 52)) return '#icon_group'
-    if (url.startsWith(D.PLACEHOLDER_PATH, 52)) return '#icon_link_favicon'
-    if (url.startsWith(D.SETUP_PATH, 52)) return '#icon_settings'
+  if (url.startsWith(D.ADDON_HOST)) {
+    const pathStart = D.ADDON_HOST.length - 1
+    if (url.startsWith(D.GROUP_PATH, pathStart)) return '#icon_group'
+    if (url.startsWith(D.PLACEHOLDER_PATH, pathStart)) return '#icon_link_favicon'
+    if (url.startsWith(D.SETUP_PATH, pathStart)) return '#icon_settings'
   }
 
   if (D.IMG_RE.test(url)) return '#icon_img'
