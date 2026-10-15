@@ -1,0 +1,42 @@
+name: chromium
+
+on:
+  push:
+    branches: [chromium]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v6
+      - name: Setup nodejs
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Pack dependencies (for offline development)
+        run: tar -czf node_modules.tgz node_modules
+      - name: Build Chromium version
+        run: |
+          if npm run | grep -q 'build.chromium'; then
+            npm run build.chromium
+            (cd addon && zip -qr ../sidebery-chromium.zip .)
+          fi
+      - name: Publish release
+        run: |
+          gh release delete chromium-latest --yes --cleanup-tag || true
+          files="node_modules.tgz"
+          [ -f sidebery-chromium.zip ] && files="$files sidebery-chromium.zip"
+          gh release create chromium-latest $files \
+            --prerelease \
+            --target "${{ github.sha }}" \
+            --title "Chromium build (latest)" \
+            --notes "Automatic build of the chromium branch (${{ github.sha }}). Unzip sidebery-chromium.zip and load it via chrome://extensions -> Load unpacked."
