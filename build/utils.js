@@ -4,9 +4,12 @@ import path from 'path'
 import ts from 'typescript'
 
 export const IS_DEV = process.argv.includes('--dev')
+export const IS_CHROMIUM = process.argv.includes('--chromium')
 export const BUNDLE_VUE = true
 export const KEEP_NAMES = false
-export const ADDON_PATH = (IS_DEV && process.env.SIDEBERY_DEV_DIR) || path.resolve('./addon')
+export const ADDON_PATH =
+  (IS_DEV && process.env.SIDEBERY_DEV_DIR) ||
+  path.resolve(IS_CHROMIUM ? './addon-chromium' : './addon')
 export const VUE_DIST = IS_DEV ? 'vue.runtime.esm-browser.js' : 'vue.runtime.esm-browser.prod.js'
 export const FMT_HOST = {
   getCanonicalFileName: path => path,

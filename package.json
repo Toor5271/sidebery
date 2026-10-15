@@ -18,6 +18,8 @@
     "build.ext": "web-ext build --source-dir ./addon -a dist/ -i __tests__",
     "build.run": "node build/webext.run.js",
     "build": "node build/all.vite.js",
+    "build.chromium": "node build/all.vite.js --chromium",
+    "dev.chromium": "node build/all.vite.js --dev --chromium",
     "clear.npm": "rm -rf node_modules package-lock.json",
     "clear": "rm -rf addon",
     "lint.eslint": "eslint ./src",

@@ -22,6 +22,11 @@ const COPY = {
   './src/assets/window-native.svg': `${Utils.ADDON_PATH}/assets/`,
 }
 
+if (Utils.IS_CHROMIUM) {
+  COPY['./src/assets/chromium'] = `${Utils.ADDON_PATH}/assets/chromium/`
+  COPY['./src/chromium/sw.js'] = `${Utils.ADDON_PATH}/bg/`
+}
+
 /**
  * ...
  */
@@ -147,48 +152,74 @@ function main() {
 main()
 
 async function handleManifest(srcPath, dstPath) {
-  const forChromium = process.argv.includes('--chromium')
+  if (!Utils.IS_CHROMIUM) return fs.promises.copyFile(srcPath, dstPath)
 
-  // Parse and patch manifest for chromium-based browser
-  if (forChromium) {
-    const srcData = await fs.promises.readFile(srcPath, 'utf-8')
-    const data = JSON.parse(srcData)
+  // Convert Firefox manifest (MV2) to Chromium manifest (MV3)
+  const srcData = await fs.promises.readFile(srcPath, 'utf-8')
+  const data = JSON.parse(srcData)
 
-    // Remove unsupported keys
-    delete data.page_action
-    delete data.browser_specific_settings
+  data.manifest_version = 3
+  data.minimum_chrome_version = '116'
 
-    // Reset commands
-    for (const key of Object.keys(data.commands)) {
-      const cmd = data.commands[key]
-      if (key === '_execute_sidebar_action') {
-        cmd.suggested_key.windows = cmd.suggested_key.default
-      } else {
-        delete cmd.suggested_key
+  // Remove unsupported keys
+  delete data.browser_specific_settings
+  delete data.page_action
+  delete data.sidebar_action
+  delete data.browser_action
+
+  // Icons (SVG icons are not supported)
+  const icons = {
+    16: './assets/chromium/icon-16.png',
+    32: './assets/chromium/icon-32.png',
+    48: './assets/chromium/icon-48.png',
+    128: './assets/chromium/icon-128.png',
+  }
+  data.icons = icons
+
+  // Toolbar button opens the side panel
+  data.action = {
+    default_icon: icons,
+    default_title: '__MSG_ActionTitle__',
+  }
+  data.side_panel = { default_path: 'sidebar/sidebar.html' }
+
+  // Background service worker
+  data.background = { service_worker: 'bg/sw.js', type: 'module' }
+
+  // Commands
+  for (const key of Object.keys(data.commands)) {
+    const cmd = data.commands[key]
+    if (key === '_execute_sidebar_action') {
+      delete data.commands[key]
+      data.commands._execute_action = {
+        suggested_key: { default: 'Alt+Shift+S' },
+        description: cmd.description,
       }
+    } else {
+      delete cmd.suggested_key
     }
-
-    // Clean up permissions
-    const contextualIdentitiesIndex = data.permissions.indexOf('contextualIdentities')
-    if (contextualIdentitiesIndex !== -1) data.permissions.splice(contextualIdentitiesIndex, 1)
-    const menusIndex = data.permissions.indexOf('menus')
-    if (menusIndex !== -1) data.permissions.splice(menusIndex, 1)
-    const menusOverrideContextIndex = data.permissions.indexOf('menus.overrideContext')
-    if (menusOverrideContextIndex !== -1) data.permissions.splice(menusOverrideContextIndex, 1)
-    const tabHideIndex = data.permissions.indexOf('tabHide')
-    if (tabHideIndex !== -1) data.permissions.splice(tabHideIndex, 1)
-    const proxyIndex = data.optional_permissions.indexOf('proxy')
-    if (proxyIndex !== -1) data.optional_permissions.splice(proxyIndex, 1)
-    data.permissions.push('proxy')
-
-    const dstData = JSON.stringify(data)
-    await fs.promises.writeFile(dstPath, dstData)
   }
 
-  // Copy
-  else {
-    return fs.promises.copyFile(srcPath, dstPath)
-  }
+  // Permissions
+  const unsupported = new Set([
+    'contextualIdentities',
+    'menus',
+    'menus.overrideContext',
+    'tabHide',
+    'theme',
+    'publicSuffix',
+    'proxy',
+    'webRequestBlocking',
+  ])
+  data.permissions = data.permissions.filter(p => !unsupported.has(p))
+  data.permissions.push('contextMenus', 'sidePanel', 'scripting', 'favicon')
+  data.optional_host_permissions = data.optional_permissions.filter(p => p === '<all_urls>')
+  data.optional_permissions = data.optional_permissions.filter(
+    p => p !== '<all_urls>' && !unsupported.has(p)
+  )
+
+  const dstData = JSON.stringify(data, null, 2)
+  await fs.promises.writeFile(dstPath, dstData)
 }
 
 async function handleLocales(srcPath, dstPath) {

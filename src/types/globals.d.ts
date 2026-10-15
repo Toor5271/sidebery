@@ -1,3 +1,6 @@
+/** True when building the Chromium version (see build/vite.ts) */
+declare const __CHROMIUM__: boolean
+
 type ID = string | number
 
 type FirstParameter<T extends (...args: any) => any> = T extends (arg: infer P) => any ? P : never

@@ -2,7 +2,7 @@ import path from 'node:path'
 import { build, defineConfig, mergeConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import type { RolldownWatcher } from 'rolldown'
-import { IS_DEV, ADDON_PATH } from './utils.js'
+import { IS_DEV, IS_CHROMIUM, ADDON_PATH } from './utils.js'
 import { log, logOk } from './utils.js'
 // import { visualizer } from 'rollup-plugin-visualizer'
 // import type { PluginVisualizerOptions } from 'rollup-plugin-visualizer'
@@ -10,7 +10,9 @@ import { log, logOk } from './utils.js'
 const base = defineConfig({
   appType: 'custom',
   mode: 'production',
-  define: {},
+  define: {
+    __CHROMIUM__: JSON.stringify(IS_CHROMIUM),
+  },
   clearScreen: false,
   cacheDir: process.env.SIDEBERY_CACHE_DIR || 'node_modules/.vite',
   logLevel: 'warn',
@@ -129,6 +131,19 @@ async function main() {
     },
   })
   buildTasks.push(build(mergeConfig(base, inpagePreviewInjection, true)))
+
+  // Chromium compatibility layer (emulates Firefox's WebExtension API)
+  if (IS_CHROMIUM) {
+    const chromiumCompat = defineConfig({
+      build: {
+        rolldownOptions: {
+          input: { 'chromium/compat': 'src/chromium/compat.ts' },
+          output: { codeSplitting: false },
+        },
+      },
+    })
+    buildTasks.push(build(mergeConfig(base, chromiumCompat, true)))
+  }
 
   const buildResults = await Promise.all(buildTasks)
 

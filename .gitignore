@@ -4,6 +4,7 @@ dist
 node_modules
 coverage
 addon
+addon-chromium
 build/*
 !build/*.ts
 !build/*.js

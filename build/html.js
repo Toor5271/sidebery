@@ -3,6 +3,7 @@ import fs from 'fs'
 import path from 'path'
 import {
   IS_DEV,
+  IS_CHROMIUM,
   ADDON_PATH,
   getTime,
   treeToList,
@@ -21,6 +22,7 @@ const SVG_ID_RE = /<svg([^<]*?)id="([^<]*?)"/
 const SVG_TAG_RE = /<svg /
 const NORM_SRC_DIR = path.normalize(SRC_DIR)
 const STATIC_PAGES = ['group.html', 'url.html']
+const CHROMIUM_COMPAT_SCRIPT = '<script type="module" src="/chromium/compat.js"></script>'
 
 /**
  * Build
@@ -97,7 +99,19 @@ async function processFile(info) {
     }
   }
 
-  const outData = srcData.replace(SVG_RE, (m, p1) => svgs[p1].content ?? m)
+  let outData = srcData.replace(SVG_RE, (m, p1) => svgs[p1].content ?? m)
+
+  // Load chromium compatibility layer before any other script
+  if (IS_CHROMIUM) {
+    const firstScriptIndex = outData.indexOf('<script')
+    if (firstScriptIndex !== -1) {
+      outData =
+        outData.slice(0, firstScriptIndex) +
+        CHROMIUM_COMPAT_SCRIPT +
+        '\n  ' +
+        outData.slice(firstScriptIndex)
+    }
+  }
   await fs.promises.mkdir(outputDir, { recursive: true })
   await fs.promises.writeFile(path.join(outputDir, info.file), outData)
 }
